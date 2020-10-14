@@ -13,7 +13,6 @@ var createTask = function(taskText, taskDate, taskList) {
   // append span and p element to parent li
   taskLi.append(taskSpan, taskP);
 
-
   // append to ul list on the page
   $("#list-" + taskList).append(taskLi);
 };
@@ -32,11 +31,11 @@ var loadTasks = function() {
   }
 
   // loop over object properties
-  $.each(tasks, function(list, arr) {
-    
-    // then loop over sub-array
+  $.each(tasks, function(key, arr) {
+
+    // then loop over sub-array (each task in each type)
     arr.forEach(function(task) {
-      createTask(task.text, task.date, list);
+      createTask(task.text, task.date, key);
     });
   });
 };
@@ -45,12 +44,66 @@ var saveTasks = function() {
   localStorage.setItem("tasks", JSON.stringify(tasks));
 };
 
+// make ul list-group sortable
+$(".card .list-group").sortable({
+  connectWith: $(".card .list-group"),
+  scroll: false,
+  tolerance: "pointer",
+  helper: "clone",
+  activate: function(event) {
+    //console.log("activate", this);
+  },
+  deactivate: function(event) {
+    //console.log("deactivate", this);
+  },
+  over: function(event) {
+    //console.log("over", event.target);
+  },
+  out: function(event) {
+    //console.log("out", event.target);
+  },
+  update: function(event) {
+    // array to store the task data in
+    var tempArr = [];
+
+    // loop over current set of children in sortable list
+    $(this).children().each(function() {
+      var text = $(this)
+        .find("p")
+        .text()
+        .trim();
+      
+      var date = $(this)
+        .find("span")
+        .text()
+        .trim();
+
+      // add task data to the temp arrary as an object
+      tempArr.push({
+        text: text,
+        date: date
+      });
+    });
+  
+  // trim down list's ID to match object property
+  var arrName = $(this)
+    .attr("id")
+    .replace("list-", "");
+
+  // update array on tasks object and save
+  // ex. tasks[toDo][]
+  tasks[arrName] = tempArr;
+  saveTasks();
+  console.log("TempArr : " +tempArr);
+  }
+});
+
 // when a task name is clicked - convert to textarea for editing
 $(".list-group").on("click", "p", function() {
   var text = $(this)
     .text()
     .trim();
-    console.log(text);
+
   // create a new textarea element
   var textInput = $("<textarea>")
     .addClass("form-control")
@@ -59,7 +112,7 @@ $(".list-group").on("click", "p", function() {
   textInput.trigger("focus");
 });
 
-// when user interactes with anything other than textarea
+// when user interacts with anything other than textarea change back to p
 $(".list-group").on("blur", "textarea", function() {
   // get textarea's current value/text
   var text = $(this)
@@ -76,8 +129,12 @@ $(".list-group").on("blur", "textarea", function() {
   var index = $(this)
     .closest(".list-group-item")
     .index();
+    
+  console.log(status, index, text);
+  console.log(typeof status, typeof index, typeof text);
 
   // update tasks object with list item info and saveTasks
+  // tasks["toDo"][0].text is undefined - trying to write to object not there. 
   tasks[status][index].text = text;
   saveTasks();
 
@@ -93,6 +150,7 @@ $(".list-group").on("blur", "textarea", function() {
 // due date was clicked
 $(".list-group").on("click", "span", function() {
   // get current text
+  console.log("Date was clicked: ");
   var date = $(this)
     .text()
     .trim();
@@ -116,12 +174,15 @@ $(".list-group").on("blur", "input[type='text']", function() {
   var date = $(this)
     .val()
     .trim();
+  console.log("date is: ", date);
 
   // get the parent ul's id attribute
   var status = $(this)
     .closest(".list-group")
     .attr("id")
-    .replace("list=", "");
+    .replace("list-", "");
+  
+  console.log("status is: ", status);
 
   // get the task's position in the list of other li elements
   var index = $(this)
