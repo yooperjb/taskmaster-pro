@@ -98,6 +98,22 @@ $(".card .list-group").sortable({
   }
 });
 
+// make drop zone for removing tasks
+$("#trash").droppable({
+  accept: ".card .list-group-item",
+  tolerance: "touch",
+  drop: function(event, ui) {
+    console.log("drop");
+    ui.draggable.remove();
+  },
+  over: function(event, ui) {
+    console.log("over");
+  },
+  out: function(event, ui) {
+    console.log("out");
+  }
+});
+
 // when a task name is clicked - convert to textarea for editing
 $(".list-group").on("click", "p", function() {
   var text = $(this)
